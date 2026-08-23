@@ -10,6 +10,8 @@
 
 ## The problem
 
+> Most people only ever buy from the store they're already used to — never checking if it's cheaper elsewhere — so they end up overpaying by default. That was me too. Fixing that one habit alone cut my own spending by 15–50%.
+
 Finding the best deal still means jumping between countless online stores and global marketplaces. Shoppers must remember their own repeat purchases, preferred brands, and price sensitivity while manually comparing tabs.
 
 Department stores offer personal shoppers; individuals rarely get that experience online.
