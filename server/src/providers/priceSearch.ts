@@ -1,5 +1,6 @@
-// 선택적 공개 가격 데이터 API (로그인 불필요) 담당.
-// PRICE_API_TOKEN이 없거나 MOCK_PRICE_API=1이면 mock 결과로 배관을 검증한다.
+// 선택적 공개 가격 데이터 API (로그인 불필요) 담당 — 특정 벤더에 종속되지 않는다.
+// PRICE_SERP_API_URL / PRICE_UNLOCKER_API_URL에 운영자가 원하는 아무 벤더의 엔드포인트나
+// 채워 넣으면 되고, 비어 있거나 MOCK_PRICE_API=1이면 mock 결과로 배관을 검증한다.
 // 이 서버 호출도 필수는 아니다 — 대화 중 직접 가격을 비교하고 싶으면 에이전트가
 // chrome_bridge로 다른 몰을 열어 바로 확인해도 된다.
 export interface DealResult {
@@ -31,12 +32,15 @@ function mockDeal(itemName: string, currentPrice: number): DealResult {
   };
 }
 
-// 공개 가격 검색 API — Naver 엔진. zone은 계정 대시보드에서 발급받은 값.
+// 공개 가격 검색 API — Naver 엔진. 어떤 SERP 프록시 벤더를 쓰든 상관없다: 운영자가
+// PRICE_SERP_API_URL에 자기 계정의 엔드포인트를 직접 채워 넣는다. zone은 그 벤더가
+// 계정 대시보드에서 발급하는 값(없는 벤더면 비워둬도 됨).
 async function callPriceSerpApi(itemName: string, currentPrice: number): Promise<DealResult> {
+  const apiUrl = process.env.PRICE_SERP_API_URL;
   const zone = process.env.PRICE_SERP_ZONE;
-  if (!zone) throw new Error("PRICE_SERP_ZONE 미설정");
+  if (!apiUrl) throw new Error("PRICE_SERP_API_URL 미설정");
 
-  const res = await fetch("https://api.brightdata.com/serp/req", {
+  const res = await fetch(apiUrl, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -83,14 +87,16 @@ export interface CrawledDetail {
 }
 
 export async function fetchProductDetail(url: string): Promise<CrawledDetail> {
+  const apiUrl = process.env.PRICE_UNLOCKER_API_URL;
   const zone = process.env.PRICE_UNLOCKER_ZONE;
   const token = process.env.PRICE_API_TOKEN;
-  if (!zone || !token) throw new Error("PRICE_API_UNAVAILABLE: PRICE_UNLOCKER_ZONE/API_TOKEN 미설정");
+  if (!apiUrl || !token) throw new Error("PRICE_API_UNAVAILABLE: PRICE_UNLOCKER_API_URL/API_TOKEN 미설정");
 
-  // Web Unlocker API — 로그인 불필요한 공개 URL을 렌더링해 HTML을 돌려준다.
+  // Web Unlocker류 API — 로그인 불필요한 공개 URL을 렌더링해 HTML을 돌려준다.
+  // 벤더 중립: 엔드포인트는 PRICE_UNLOCKER_API_URL로 운영자가 직접 지정한다.
   let res: Response;
   try {
-    res = await fetch("https://api.brightdata.com/request", {
+    res = await fetch(apiUrl, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
       body: JSON.stringify({ zone, url, format: "raw" }),
