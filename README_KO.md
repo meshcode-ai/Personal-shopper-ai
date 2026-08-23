@@ -152,27 +152,26 @@ chrome_bridge를 못 쓰는 상황(브라우저 자동화 미연결 등)이거�
 curl -X POST localhost:8787/api/shops/{id}/sync
 ```
 
-### 3. 상품 상세 + 태그 — **Bright Data가 1순위**
+### 3. 상품 상세 + 태그 — **chrome_bridge가 기본**
 
-공개 정보(상세페이지·가격)는 Bright Data(공개 데이터 크롤러)가 담당하는 게 맞다. 먼저 이걸 호출해라:
-
-```bash
-curl -X POST localhost:8787/api/products/{id}/enrich
-```
-
-서버가 내부적으로 Bright Data를 먼저 시도하고, 안 되면 데모 데이터로 내려간다.
-**`502` + `"fallback": "chrome_bridge"`가 돌아올 때만** 네가 직접 chrome_bridge로 상세페이지를
-열어 읽고 아래로 제출해라:
+공개 정보(상세페이지·가격)도 개인 데이터와 똑같이 다룬다 — 네가 chrome_bridge로 직접
+상세페이지를 열어 읽고 아래로 제출해라. `{name, category}` 구조화 태그도 서버가 아니라
+**네가(에이전트, 네 LLM으로) 직접 뽑아서** `tags`로 같이 채운다:
 
 ```bash
 curl -X POST localhost:8787/api/products/{id}/detail -d '{
-  "title": "...", "description": "...", "detail_content": "...", "image_url": "..."
+  "title": "...", "description": "...", "detail_content": "...", "image_url": "...",
+  "tags": [{"name": "...", "category": "브랜드"}]
 }'
 ```
 
 > **데이터 타입 규칙**: `detail_content`엔 원본 HTML을 그대로 넣지 말고 평문 텍스트로 정리해서
 > 넣어라. 가격은 정수, 태그는 항상 `{name, category}` 객체 배열이다 — 전부 그리드가 파싱 없이
 > 바로 렌더링할 수 있는 형태여야 한다.
+
+> `POST /api/products/{id}/enrich`도 있긴 하다 — 서버에 보조 데이터 소스가 설정돼 있을 때만
+> 자동으로 채워보는 선택적 지름길인데, 기본값(키 없음)에서는 대부분 실패한다. 먼저 시도할
+> 필요 없이 곧장 위 경로로 제출해도 된다.
 
 ### 4. 취향 분석 → 완성
 
@@ -222,12 +221,13 @@ Personal Shopper AI는 내가 실제로 쓰는 쇼핑몰(쿠팡 · 네이버쇼�
 `chrome_bridge`(meshcode.ai 내부 브라우저 자동화)로 **사용자 본인의 이미 인증된 크롬 세션**을 그대로 조종해서 주문내역 페이지를 읽는다.
 비밀번호를 서버로 보내지도, 세션을 탈취하지도 않는다. 브라우저는 처음부터 끝까지 사용자 기기에 있다.
 
-그리고 **공개 데이터(가격/재고/경쟁 상품)** 는 Bright Data가 담당한다. 역할이 깔끔하게 나뉜다.
+**공개 데이터(가격/재고/경쟁 상품)도 같은 `chrome_bridge`가 담당한다.** 로그인이 필요하든
+안 하든, 에이전트가 이미 열려 있는 실제 브라우저로 직접 확인한다 — 역할을 굳이 나누지 않는다.
 
 | 데이터 종류 | 담당 |
 | --- | --- |
 | 내 주문내역 (로그인 필요) | `chrome_bridge` — 내 브라우저 세션 |
-| 상품 가격 · 재고 · 경쟁 상품 (공개) | **Bright Data** SERP / Scraper API |
+| 상품 가격 · 재고 · 경쟁 상품 (공개) | `chrome_bridge` — 에이전트가 직접 찾아봄 |
 
 ---
 
@@ -244,7 +244,7 @@ Personal Shopper AI는 내가 실제로 쓰는 쇼핑몰(쿠팡 · 네이버쇼�
 │                                                              │
 │   ┌────────────┐   ┌──────────────┐   ┌──────────────────┐   │
 │   │ Shop Agent │   │ Sync Engine  │   │ Recommender      │   │
-│   │ (CRUD 툴)  │   │ chrome_bridge│   │ Qwen + Bright    │   │
+│   │ (CRUD 툴)  │   │ chrome_bridge│   │ (에이전트 LLM)    │   │
 │   └─────┬──────┘   └──────┬───────┘   └────────┬─────────┘   │
 │         └─────────────────┴────────────────────┘             │
 │                           │                                  │
@@ -254,16 +254,16 @@ Personal Shopper AI는 내가 실제로 쓰는 쇼핑몰(쿠팡 · 네이버쇼�
 │                  │  interests/deals │                        │
 │                  └──────────────────┘                        │
 └──────────────────────────────────────────────────────────────┘
-        │                    │                    │
-   ┌────▼────┐        ┌──────▼──────┐      ┌──────▼──────┐
-   │ Chrome  │        │ Bright Data │      │ Qwen Cloud  │
-   │ (내 세션)│        │ 가격/SERP   │      │ 취향 추론    │
-   └─────────┘        └─────────────┘      └─────────────┘
-                             │
-                      ┌──────▼──────┐
-                      │  Daytona    │  파서 코드를 샌드박스에서
-                      │  샌드박스    │  안전하게 실행/자가수정
-                      └─────────────┘
+        │
+   ┌────▼────┐
+   │ Chrome  │  구매내역 · 상품 상세 · 가격 비교, 전부 여기서
+   │ (내 세션)│  chrome_bridge로 직접 읽어온다
+   └────┬────┘
+        │
+ ┌──────▼──────┐
+ │  Daytona    │  파서 코드를 샌드박스에서
+ │  샌드박스    │  안전하게 실행/자가수정
+ └─────────────┘
 ```
 
 ---
@@ -283,13 +283,14 @@ Personal Shopper AI는 내가 실제로 쓰는 쇼핑몰(쿠팡 · 네이버쇼�
       ↓
 6. 구매내역이 들어올 때마다 products 카탈로그가 자동 집계됨 (재구매 횟수 포함)
       ↓
-7. enrich_product → 상세페이지 크롤링 + Qwen이 구조화 태그({name, category}) 추출
+7. submit_product_detail → chrome_bridge로 상세페이지 확인 + 에이전트가 직접
+   구조화 태그({name, category}) 추출해서 같이 제출
       ↓
 8. analyze_interests → 구매 패턴에서 취향 프로필(PROFILE.md) 갱신
       ↓
 9. search_products(personalized=true) → 태그×취향이 겹치는 상품이 먼저 뜨는 그리드
       ↓
-10. find_better_price → Bright Data로 가격 비교 → 딜 피드 완성
+10. chrome_bridge로 다른 몰 가격 직접 비교 → 딜 피드 완성
 ```
 
 ---
@@ -392,8 +393,10 @@ security find-generic-password -a "personal-shopper:shop:1" -s "personal-shopper
 
 ### 🏷️ 태그는 항상 구조화된다
 
-크롤링 직후 Qwen(또는 mock)이 상세설명에서 태그를 뽑는데, 자유 텍스트가 아니라
-**`{name, category}` 쌍**으로 고정한다. `category`는 4종(`브랜드` · `카테고리` · `속성` · `가격대`)뿐이라
+chrome_bridge로 상세페이지를 읽은 직후 **에이전트가 직접(자기 LLM으로)** 태그를 뽑아
+제출하는 게 기본이다. 자유 텍스트가 아니라 **`{name, category}` 쌍**으로 고정한다.
+(태그 없이 제출하면 서버가 mock 키워드 매칭으로 대충 채우긴 하는데, 정확도가 낮아서
+권장하지 않는다.) `category`는 4종(`브랜드` · `카테고리` · `속성` · `가격대`)뿐이라
 검색 UI에서 색상 구분이 가능하고, 개인화 점수 계산(`personalizationBonus`)에서
 "이 태그가 내 취향(interests)과 겹치는가"를 일관되게 판단할 수 있다.
 
@@ -419,12 +422,18 @@ security find-generic-password -a "personal-shopper:shop:1" -s "personal-shopper
 
 | 종류 (`kind`) | 무엇을 알려주나 | 발동 조건 | 외부 호출 |
 | --- | --- | --- | --- |
-| `hot_deal` | "OO을 XX몰에서 사면 N% 더 싸요 (개당 가격 포함)" | 구매내역 기반 딜 스캔에서 15%↑ 절약 | Bright Data |
-| `monthly_saving` | "매달 약 N원 아낄 수 있어요" | 2번 이상 재구매한 상품 × 실제 구매 빈도로 월 절약액 환산 | Bright Data |
+| `hot_deal` | "OO을 XX몰에서 사면 N% 더 싸요 (개당 가격 포함)" | 구매내역 기반 딜 스캔에서 15%↑ 절약 | 자동 스캔 (mock 가격 provider, 기본값) |
+| `monthly_saving` | "매달 약 N원 아낄 수 있어요" | 2번 이상 재구매한 상품 × 실제 구매 빈도로 월 절약액 환산 | 자동 스캔 (mock 가격 provider, 기본값) |
 | `restock_reminder` | "슬슬 다시 살 때예요 / 다 떨어졌을 시점이에요" | 평균 재구매 간격의 80%↑ 경과 (순수 구매 이력만 사용) | 없음 |
-| `watchlist_hit` | "목표가 이하로 딜이 잡혔어요" | 상품카드 🎯 버튼으로 등록한 목표가 이하 발견 | Bright Data |
+| `watchlist_hit` | "목표가 이하로 딜이 잡혔어요" | 상품카드 🎯 버튼으로 등록한 목표가 이하 발견 | 자동 스캔 (mock 가격 provider, 기본값) |
 | `overseas_arbitrage` | "해외직구하면 배송비/관·부가세 포함해도 N% 싸요" | 패션·전자기기·뷰티 카테고리 + 3만원 이상 + 10%↑ 이득(추정) | mock 해외 가격 |
 | `price_timing` | "지금이 최근 중 최저가 / 요즘 비싸니 기다려 보세요" | 같은 상품을 여러 번 스캔해 쌓인 가격 이력(`price_snapshots`) 비교 | 없음 (이미 쌓인 이력만) |
+
+> `hot_deal`/`monthly_saving`/`watchlist_hit`는 페이지 로드마다 도는 **자동 배경 스캔**
+> (`scan_deals`)이 채운다 — 몰마다 에이전트를 chrome_bridge로 돌릴 순 없으니 여기만 예외적으로
+> 서버가 자체 가격 provider(기본은 mock, 원하면 실제 API 키로 교체 가능)를 쓴다. 반면 사용자가
+> 대화 중 직접 "이거 다른데서 더 싸?"라고 물으면 에이전트가 chrome_bridge로 직접 찾아서 답한다 —
+> [핵심 아이디어](#핵심-아이디어--로그인-장벽을-어떻게-넘는가) 참고.
 
 ### API
 
@@ -470,15 +479,16 @@ PATCH  /api/products/:id/watch  # { "target_price": 15000 } 등록, { "target_pr
 | `remove_shop_credential(shop_id)` | 저장된 로그인 정보 삭제 |
 | `sync_purchase_history(shop_id)` | **데모 시드**만 채운다 (샵 이름이 4개 데모몰과 일치할 때) |
 | `import_purchases(shop_id, orders)` | **실데이터 경로.** chrome_bridge로 스크랩한 주문내역을 그대로 반영 |
-| `enrich_product(product_id)` | 상세페이지+태그 부착. **Bright Data 1순위**, 실패 시 NO_DETAIL_SOURCE |
-| `submit_product_detail(product_id, detail)` | enrich_product 실패 시 chrome_bridge로 직접 제출하는 폴백 |
-| `analyze_interests()` | Qwen으로 구매 패턴 → interests 갱신 |
+| `enrich_product(product_id)` | 상품 상세 자동 채우기 — 보조 데이터 소스가 설정돼 있을 때만 동작하는 선택 경로, 기본은 NO_DETAIL_SOURCE |
+| `submit_product_detail(product_id, detail, tags?)` | **기본 경로.** chrome_bridge로 직접 읽은 상세 + 에이전트가 직접 뽑은 태그를 제출 |
+| `analyze_interests()` | 구매 패턴 → interests 갱신 (에이전트/LLM 요약, 키 없으면 mock) |
 | `search_products(query?, shop_id?, personalized?)` | 카탈로그 검색 (기본 개인화 정렬) |
-| `find_better_price(purchase_id)` | Bright Data로 동일/유사 상품 최저가 탐색 → deals 기록 |
+| `find_better_price(purchase_id)` | 넛지 배너용 자동 가격 스캔(mock 기본) → deals 기록. 대화 중 직접 가격 비교는 chrome_bridge로 |
 | `repair_parser(shop_id)` | 파서 실패 시 Daytona 샌드박스에서 새 파서 생성·검증 (설계 단계) |
 
 > `sync_purchase_history` / `import_purchases`, `enrich_product` / `submit_product_detail`은
-> 각각 "1순위 실패 시 폴백" 쌍이다 — [데이터 소스 우선순위](docs/ARCHITECTURE.md#데이터-소스-우선순위-요약) 참고.
+> 각각 "보조 지름길 실패 시 기본 경로" 쌍이다 — 기본은 항상 chrome_bridge다. 자세한 내용은
+> [데이터 소스 우선순위](docs/ARCHITECTURE.md#데이터-소스-우선순위-요약) 참고.
 
 ---
 
@@ -503,7 +513,7 @@ PATCH  /api/products/:id/watch  # { "target_price": 15000 } 등록, { "target_pr
 ```bash
 bun install
 
-cp .env.example .env    # Bright Data / Qwen / Daytona 키 입력
+cp .env.example .env    # 전부 선택 사항 — 아래 참고
 
 bun run db:migrate      # SQLite 스키마 생성
 bun run dev             # http://localhost:8787  (API + 웹 UI 같은 포트)
@@ -511,9 +521,12 @@ bun run dev             # http://localhost:8787  (API + 웹 UI 같은 포트)
 bun test                # 스모크테스트 32개
 ```
 
-키 없이도 전부 동작한다 — `DASHSCOPE_API_KEY` / `BRIGHTDATA_API_TOKEN`이 없으면
-자동으로 결정적 mock 응답(`MOCK_LLM` / `MOCK_BRIGHTDATA`)으로, macOS가 아니거나
-`MOCK_KEYCHAIN=1`이면 파일 기반 mock 키체인으로 폴백해서 데모/테스트 배관이 끊기지 않는다.
+키 없이도 전부 동작한다. 상품 상세/태그/가격비교는 기본적으로 chrome_bridge(+ 에이전트의
+LLM)를 쓰므로 애초에 키가 필요 없다. `.env.example`에 있는 `DASHSCOPE_API_KEY` /
+`BRIGHTDATA_API_TOKEN`은 넛지 배너 자동 스캔이나 취향 프로필 요약을 조금 더 정교하게
+만들고 싶을 때만 선택적으로 채우는 값이고, 없으면 결정적 mock 응답(`MOCK_LLM` /
+`MOCK_BRIGHTDATA`)으로 자동 대체된다. macOS가 아니거나 `MOCK_KEYCHAIN=1`이면 자격증명도
+파일 기반 mock 키체인으로 폴백해서 데모/테스트 배관이 끊기지 않는다.
 
 ---
 

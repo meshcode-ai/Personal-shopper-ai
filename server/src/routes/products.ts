@@ -48,8 +48,9 @@ productsRoute.post("/discover", async (c) => {
   }
 });
 
-// 우선순위: Bright Data(공개 데이터 크롤러) → 데모 시드. 둘 다 못 다루면 502 +
-// chrome_bridge 폴백 안내를 준다 (agent가 /:id/detail로 직접 제출하도록).
+// 등록된 보조 데이터 소스(설정돼 있을 때만)로 자동 채워보고, 없으면 데모 시드까지 확인한다.
+// 기본 경로는 아니다 — 대부분은 실패해서 502로 떨어지고, 그러면 에이전트가 chrome_bridge로
+// 직접 상세페이지를 읽고 태그도 스스로 뽑아서 /:id/detail 로 제출해야 한다.
 productsRoute.post("/:id/enrich", async (c) => {
   const db = getDb();
   const id = Number(c.req.param("id"));
@@ -60,9 +61,9 @@ productsRoute.post("/:id/enrich", async (c) => {
     if (err instanceof Error && err.message === "NO_DETAIL_SOURCE") {
       return c.json(
         {
-          error: "Bright Data와 데모 데이터 모두 이 상품을 다루지 못했습니다.",
+          error: "등록된 보조 데이터 소스로는 이 상품을 다루지 못했습니다.",
           fallback: "chrome_bridge",
-          hint: `AI 에이전트가 직접 상세페이지를 열어 POST /api/products/${id}/detail 로 제출하세요.`,
+          hint: `AI 에이전트가 직접 상세페이지를 열어 POST /api/products/${id}/detail 로 제출하세요 (tags도 직접 뽑아서 함께 보내면 서버가 다시 추출하지 않습니다).`,
         },
         502,
       );
@@ -71,8 +72,9 @@ productsRoute.post("/:id/enrich", async (c) => {
   }
 });
 
-// 상품 그리드 "다른 쇼핑몰 찾기" 버튼 — Bright Data(공개 데이터 크롤러)로 같은/유사
-// 상품을 다른 몰에서 검색해 원가 대비 얼마나 싼지 그 자리에서 바로 보여준다.
+// 상품 그리드 "다른 쇼핑몰 찾기" 버튼 — 넛지 배너용 자동 스캔과 같은 보조 가격비교
+// 경로를 그 자리에서 한 건만 돌려서 원가 대비 얼마나 싼지 바로 보여준다. 사용자가 대화
+// 중에 직접 물어본 가격 비교는 에이전트가 chrome_bridge로 직접 찾아서 답하는 게 기본이다.
 productsRoute.post("/:id/find-deal", async (c) => {
   const db = getDb();
   const id = Number(c.req.param("id"));
@@ -97,15 +99,23 @@ productsRoute.patch("/:id/watch", async (c) => {
   return c.json(product);
 });
 
-// chrome_bridge 폴백 — AI 에이전트가 사용자의 브라우저로 직접 연 상세페이지
-// 내용을 그대로 제출한다. 서버는 여기서도 동일하게 Qwen 태그 추출을 돌린다.
+// chrome_bridge 경로 — AI 에이전트가 사용자의 브라우저로 직접 연 상세페이지 내용을
+// 그대로 제출한다. tags를 함께 보내면(에이전트가 자기 LLM으로 직접 뽑은 {name, category})
+// 서버는 그걸 그대로 쓴다 — 별도 LLM 호출 없음. tags를 안 보내면 서버가 mock 키워드
+// 매칭으로 대충 채운다(정확도가 낮으니 가급적 에이전트가 직접 채워서 보내라).
 productsRoute.post("/:id/detail", async (c) => {
   const db = getDb();
   const id = Number(c.req.param("id"));
   const body = await c.req.json().catch(() => null);
   if (!body?.title) {
-    return c.json({ error: "title은 필수, description/detail_content/image_url은 선택" }, 400);
+    return c.json({ error: "title은 필수, description/detail_content/image_url/tags는 선택" }, 400);
   }
+  const tags = Array.isArray(body.tags)
+    ? body.tags.filter((t: unknown): t is { name: string; category: string } => {
+        const tag = t as { name?: unknown; category?: unknown } | null;
+        return typeof tag?.name === "string" && typeof tag?.category === "string";
+      })
+    : undefined;
   try {
     return c.json(
       await submitProductDetail(db, id, {
@@ -113,6 +123,7 @@ productsRoute.post("/:id/detail", async (c) => {
         description: body.description ?? null,
         detail_content: body.detail_content ?? null,
         image_url: body.image_url ?? null,
+        tags,
       }),
     );
   } catch (err) {

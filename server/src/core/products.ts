@@ -84,15 +84,19 @@ interface DetailFields {
   description: string | null;
   detail_content: string | null;
   image_url: string | null;
+  // 호출자(에이전트)가 이미 {name, category} 태그를 직접 뽑아왔다면 그대로 쓴다 — 서버가 별도
+  // LLM을 다시 호출할 필요가 없다. 비어 있을 때만 mock 키워드 매칭으로 대충 채운다.
+  tags?: ProductTag[];
 }
 
-function saveDetailAndTag(db: Database, productId: number, price: number | null, detail: DetailFields) {
+async function saveDetailAndTag(db: Database, productId: number, price: number | null, detail: DetailFields) {
   db.run(
     `UPDATE products
      SET title = ?, description = ?, detail_content = ?, image_url = ?, last_crawled_at = datetime('now')
      WHERE id = ?`,
     [detail.title, detail.description, detail.detail_content, detail.image_url, productId],
   );
+  if (detail.tags && detail.tags.length > 0) return { tags: detail.tags };
   return extractProductTags(detail.title, detail.detail_content ?? "", price);
 }
 

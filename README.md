@@ -83,12 +83,19 @@ never reappears on rescan, even after the underlying deal is refreshed.
 
 | Kind | What it tells you | Trigger | External call |
 | --- | --- | --- | --- |
-| `hot_deal` | "X is N% cheaper at store Y" (plus per-unit price when parseable) | ≥15% savings found from purchase history | Bright Data |
-| `monthly_saving` | "You could save about ₩N/month" | Repeat-bought item (2+ purchases) × actual purchase frequency | Bright Data |
+| `hot_deal` | "X is N% cheaper at store Y" (plus per-unit price when parseable) | ≥15% savings found from purchase history | auto background scan (mock price provider by default) |
+| `monthly_saving` | "You could save about ₩N/month" | Repeat-bought item (2+ purchases) × actual purchase frequency | auto background scan (mock price provider by default) |
 | `restock_reminder` | "You're due to restock" | Time since last purchase ≥ 80% of average repeat interval | none (purchase history only) |
-| `watchlist_hit` | "Your target price was hit" | Product has a `target_price` set (🎯 button) and a cheaper listing was found | Bright Data |
+| `watchlist_hit` | "Your target price was hit" | Product has a `target_price` set (🎯 button) and a cheaper listing was found | auto background scan (mock price provider by default) |
 | `overseas_arbitrage` | "Cross-border buying is N% cheaper even after fees" | Fashion/electronics/beauty item ≥ ₩30,000, ≥10% savings after estimated shipping + duty | mocked overseas quote |
 | `price_timing` | "This is the lowest price seen recently" / "prices are high right now" | 3+ scanned price snapshots for the same product | none (uses stored history) |
+
+> The three rows above are filled by an automatic background scan (`scan_deals`), not by the
+> agent — it can't drive chrome_bridge across every mall on every page load. When you ask the
+> agent directly to compare prices, it looks it up live via chrome_bridge instead. Product detail
+> and tags work the same way: the agent reads the page via chrome_bridge and extracts structured
+> `{name, category}` tags itself (its own LLM, no separate hosted API needed) — see the AI Agent
+> setup guide above.
 
 Also: `GET /api/spending/report` (rolling 30-day vs prior 30-day category spend, anchored
 to the latest purchase date rather than the calendar) and `PATCH /api/products/:id/watch`

@@ -175,9 +175,10 @@ export const TOOLS = [
     function: {
       name: "enrich_product",
       description:
-        "상품 상세페이지를 읽어와 설명을 채우고 구조화된 태그({name, category})를 붙인다. " +
-        "Bright Data(공개 데이터 크롤러)를 먼저 시도하고, 실패하면 NO_DETAIL_SOURCE를 반환한다 — " +
-        "이땐 chrome_bridge로 직접 열어 submit_product_detail로 제출해야 한다.",
+        "상품 상세를 자동으로 채워보는 보조 툴이다. 서버에 등록된 보조 데이터 소스가 있을 " +
+        "때만 동작하고, 대부분은 NO_DETAIL_SOURCE로 실패한다 — 그러면 (또는 애초에 이 툴을 " +
+        "건너뛰고) chrome_bridge로 직접 상세페이지를 열어 읽고, 태그도 네가 직접 뽑아서 " +
+        "submit_product_detail로 제출해라. 기본 경로는 언제나 chrome_bridge다.",
       parameters: {
         type: "object",
         properties: { product_id: { type: "number" } },
@@ -190,8 +191,10 @@ export const TOOLS = [
     function: {
       name: "submit_product_detail",
       description:
-        "enrich_product가 NO_DETAIL_SOURCE를 반환했을 때 쓰는 폴백. chrome_bridge로 " +
-        "직접 연 상세페이지 내용을 제출하면 서버가 동일하게 구조화 태그를 추출해 붙인다.",
+        "chrome_bridge로 직접 연 상세페이지 내용을 제출한다. 이게 기본 경로다 — enrich_product를 " +
+        "먼저 시도할 필요 없이 곧장 여기로 제출해도 된다. tags는 네가 직접(네 LLM으로) 뽑은 " +
+        "{name, category} 배열이다 — 항상 채워서 보내라. 비워두면 서버가 mock 키워드 매칭으로 " +
+        "대충 채우는데 정확도가 낮다.",
       parameters: {
         type: "object",
         properties: {
@@ -200,6 +203,19 @@ export const TOOLS = [
           description: { type: "string" },
           detail_content: { type: "string" },
           image_url: { type: "string" },
+          tags: {
+            type: "array",
+            description:
+              "네가 직접 뽑은 구조화 태그. category는 \"브랜드\" | \"카테고리\" | \"속성\" | \"가격대\" 중 하나로 고정.",
+            items: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                category: { type: "string", enum: ["브랜드", "카테고리", "속성", "가격대"] },
+              },
+              required: ["name", "category"],
+            },
+          },
         },
         required: ["product_id", "title"],
       },
@@ -255,6 +271,7 @@ export async function dispatchTool(db: Database, name: string, args: Record<stri
         description: args.description ?? null,
         detail_content: args.detail_content ?? null,
         image_url: args.image_url ?? null,
+        tags: args.tags,
       });
     case "search_products":
       return ProductsCore.searchProducts(

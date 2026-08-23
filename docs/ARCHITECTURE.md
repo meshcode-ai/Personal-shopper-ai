@@ -4,8 +4,8 @@
 
 1. **데이터는 기기를 떠나지 않는다.** 구매내역·취향 메모리는 로컬 SQLite에만 존재한다.
    외부로 나가는 것은 가격 조회용 상품명과 익명화된 취향 요약뿐이다.
-2. **로그인 벽은 뚫지 않고 우회한다.** 인증이 필요한 데이터는 사용자 본인 브라우저 세션으로,
-   공개 데이터는 Bright Data로. 두 경로를 절대 섞지 않는다.
+2. **로그인 벽은 뚫지 않고 우회한다.** 로그인이 필요하든 공개 데이터든, 전부 사용자 본인의
+   실제 브라우저 세션(chrome_bridge)으로 직접 확인한다 — 별도 스크래핑 API로 우회하지 않는다.
 3. **LLM이 만든 코드는 로컬에서 바로 실행하지 않는다.** 파서 자가수복은 Daytona 샌드박스에서만.
 4. **자격증명은 DB에 없다.** OS 키체인에 두고 DB에는 참조 키만.
 
@@ -38,18 +38,21 @@ seedDemoPurchases(shop_id)                      ← chrome_bridge 미연결 시 
 상세페이지 본문과 구조화 태그가 필요하다 — 이게 개인화 검색의 재료가 된다.
 
 ```
-enrich_product(product_id)                      ← 1순위: Bright Data
-  1. products에서 product_url 조회
-  2. Bright Data Web Unlocker로 상세페이지 열기 (토큰 미설정/MOCK_BRIGHTDATA=1이면 스킵)
-  3. 실패하면 데모 시드(demo-shops.json)에서 같은 product_url 조회
-  4. 둘 다 없으면 NO_DETAIL_SOURCE — 호출자가 submit_product_detail로 폴백해야 함
-  5. title/description/detail_content/image_url 확보 → products UPDATE
-  6. Qwen(또는 mock 키워드 매칭)으로 {name, category} 태그 추출
-     category ∈ {브랜드, 카테고리, 속성, 가격대} — 자유 텍스트 아님
-  7. tags UPSERT + product_tags 연결
+submit_product_detail(product_id, detail, tags?) ← 기본 경로: chrome_bridge
+  1. 에이전트가 chrome_bridge로 상세페이지를 직접 열어 읽는다
+  2. title/description/detail_content/image_url 확보 → products UPDATE
+  3. {name, category} 구조화 태그는 에이전트가 자기 LLM으로 직접 뽑아 tags로 함께 제출
+     (category ∈ {브랜드, 카테고리, 속성, 가격대} — 자유 텍스트 아님)
+     tags를 안 주면 서버가 mock 키워드 매칭으로 대충 채운다(정확도 낮음, 비권장)
+  4. tags UPSERT + product_tags 연결
 
-submit_product_detail(product_id, detail)       ← 2순위: chrome_bridge 수동 제출
-  에이전트가 chrome_bridge로 직접 읽은 내용을 그대로 받아 5~7단계와 동일하게 처리
+enrich_product(product_id)                      ← 선택적 지름길, 있으면만
+  1. products에서 product_url 조회
+  2. 서버에 등록된 보조 데이터 소스(예: 유료 스크래퍼 API)로 상세페이지 열기
+     — 토큰 미설정/MOCK_BRIGHTDATA=1이면 스킵(기본값)
+  3. 실패하면 데모 시드(demo-shops.json)에서 같은 product_url 조회
+  4. 둘 다 없으면 NO_DETAIL_SOURCE — 호출자는 submit_product_detail로 직접 채워야 함
+     (5~7단계는 submit_product_detail과 동일하게 처리)
 ```
 
 ### 개인화 검색 (`core/products.ts::searchProducts`)
@@ -85,8 +88,10 @@ repair_parser(shop_id)
 
 ### Recommender (`server/src/providers/`)
 ```
-analyze_interests()      Qwen  : purchases → 태그·재구매주기·가격민감도 → interests
-find_better_price(pid)   Bright: 상품명으로 SERP/Scraper → 최저가 → deals
+analyze_interests()      purchases → 태그·재구매주기·가격민감도 → interests
+                          (LLM 요약, 키 없으면 mock — server/src/providers/qwen.ts)
+find_better_price(pid)   넛지 배너용 자동 스캔, 기본은 mock 가격 provider → deals
+                          (대화 중 직접 가격 비교는 에이전트가 chrome_bridge로 확인)
 ```
 
 ## 데이터 흐름
@@ -94,13 +99,15 @@ find_better_price(pid)   Bright: 상품명으로 SERP/Scraper → 최저가 → 
 ```
 Chrome (내 세션) ──scrape──> purchases ──┬──> products (카탈로그, purchase_count 누적)
                                           │        │
-                                          │        └──enrich──> tags (구조화 {name,category})
+                                          │        └──chrome_bridge로 상세 확인──> tags
+                                          │           (에이전트가 직접 {name,category} 추출)
                                           │                        │
                                           └──analyze──> interests ─┘
                                                             │        (겹치면 개인화 점수)
                                                             ▼
                                                     search_products ──> 그리드/탭 UI
-purchases ──find_better_price──> Bright Data ──> deals ──> UI 추천 피드
+purchases ──find_better_price(자동 스캔, mock 기본)──> deals ──> UI 추천 피드
+       └──chrome_bridge로 직접 가격 비교(대화 중)──────────────────┘
 ```
 
 **주문내역 스크랩 실패 대비**: `server/src/fixtures/demo-shops.json`에 4개 몰(쿠팡·네이버쇼핑·알리익스프레스·크림) 데모
@@ -111,10 +118,12 @@ purchases ──find_better_price──> Bright Data ──> deals ──> UI �
 
 | 데이터 종류 | 1순위 | 폴백 | 이유 |
 | --- | --- | --- | --- |
-| 구매내역 (로그인 필요) | chrome_bridge (`/purchases/import`) | 데모 시드 (`/sync`) | 로그인 벽 안 → 공개 크롤러 접근 불가 |
-| 상품 상세/태그 (공개) | Bright Data (`/enrich`) | chrome_bridge (`/detail`) | 공개 URL → Bright Data(공개 데이터 크롤러)가 전문 |
+| 구매내역 (로그인 필요) | chrome_bridge (`/purchases/import`) | 데모 시드 (`/sync`) | 로그인 벽 안 → 공개 크롤러도 못 들어감, 에이전트가 직접 |
+| 상품 상세/태그 (공개) | chrome_bridge (`/detail`) | enrich_product (`/enrich`, 보조 데이터 소스 설정 시만) | 개인 데이터와 똑같이 에이전트가 직접 보는 게 기본, 서버 보조 경로는 선택 사항 |
 
-방향이 반대라는 게 포인트다 — 개인 데이터는 에이전트가, 공개 데이터는 Bright Data가 먼저 맡는다.
+개인 데이터도 공개 데이터도 방향이 같다 — **둘 다 chrome_bridge가 1순위**다. 서버 보조 경로
+(enrich_product / find_better_price)는 외부 API 키가 설정돼 있을 때만 도는 선택적 가속
+수단일 뿐, 없어도(기본값) 전혀 문제없이 동작한다.
 
 ## 스코프 밖 (의도적으로 제외)
 
