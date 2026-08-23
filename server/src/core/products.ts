@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
-import { fetchProductDetail } from "../providers/brightdata";
-import { extractProductTags, type ProductTag } from "../providers/qwen";
+import { fetchProductDetail } from "../providers/priceSearch";
+import { extractProductTags, type ProductTag } from "../providers/llm";
 import { getDemoProductDetail } from "./demo-data";
 import type { Interest } from "./interests";
 import { getShop } from "./shops";
@@ -100,11 +100,12 @@ async function saveDetailAndTag(db: Database, productId: number, price: number |
   return extractProductTags(detail.title, detail.detail_content ?? "", price);
 }
 
+// [선택적 지름길 — 앱의 기본 경로는 아래 submitProductDetail()/chrome_bridge다]
 // 상세페이지를 읽어와 title/description/detail_content를 채우고 구조화 태그를 붙인다.
-// 우선순위 체인: ① Bright Data(공개 데이터 크롤러, 공개 URL 담당) → ② 데모 시드 데이터.
-// 둘 다 안 되면(실제 서비스에서 Bright Data가 그 사이트를 못 다루는 경우) NO_DETAIL_SOURCE를
-// 던진다 — 호출자는 이걸 받아 chrome_bridge로 직접 크롤링한 뒤 submitProductDetail()로
-// 제출하도록 안내해야 한다 (GETTING_STARTED.md 플레이북 참고).
+// 우선순위 체인: ① 보조 데이터 소스(토큰 설정 시만, 공개 URL 담당) → ② 데모 시드 데이터.
+// 둘 다 안 되면(대부분의 경우 — 기본값은 토큰 미설정) NO_DETAIL_SOURCE를 던진다 — 호출자인
+// 에이전트는 이걸 chrome_bridge로 직접 크롤링해 submitProductDetail()로 제출하라는 신호로
+// 받아들여야 한다 (실제로는 이 함수를 거치지 않고 곧장 submitProductDetail()로 가도 된다).
 export async function enrichProductDetail(db: Database, productId: number): Promise<ProductWithTags> {
   const product = getProduct(db, productId);
   if (!product) throw new Error("NOT_FOUND");
@@ -119,12 +120,12 @@ export async function enrichProductDetail(db: Database, productId: number): Prom
 }
 
 async function resolveDetail(db: Database, product: Product): Promise<DetailFields | null> {
-  const useBrightData = process.env.MOCK_BRIGHTDATA !== "1" && Boolean(process.env.BRIGHTDATA_API_TOKEN);
-  if (useBrightData) {
+  const usePriceApi = process.env.MOCK_PRICE_API !== "1" && Boolean(process.env.PRICE_API_TOKEN);
+  if (usePriceApi) {
     try {
       return await fetchProductDetail(product.product_url);
     } catch {
-      // Bright Data가 이 URL을 못 다루면(계정 zone 미설정, 사이트 차단 등) 데모/폴백으로 내려간다.
+      // 보조 데이터 소스가 이 URL을 못 다루면(계정 zone 미설정, 사이트 차단 등) 데모/폴백으로 내려간다.
     }
   }
 
@@ -133,7 +134,7 @@ async function resolveDetail(db: Database, product: Product): Promise<DetailFiel
   return demo ?? null;
 }
 
-// chrome_bridge 폴백 경로 — Bright Data/데모 둘 다 이 상품을 다루지 못할 때,
+// chrome_bridge 폴백 경로 — 보조 데이터 소스/데모 둘 다 이 상품을 다루지 못할 때,
 // AI 에이전트가 사용자의 브라우저로 직접 연 상세페이지 내용을 그대로 제출한다.
 export async function submitProductDetail(
   db: Database,

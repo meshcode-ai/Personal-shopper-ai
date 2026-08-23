@@ -1,8 +1,8 @@
 // 해외직구 비교 대상 글로벌 쇼핑몰 레퍼런스. 미국/중국 위주로 정리했다.
 //
 // scrape_path는 실측(mc__meshcode__chrome_bridge로 각 검색 URL을 직접 열어본 결과) 기준:
-//   - "public"      : 로그인 없이 검색 결과가 그대로 나온다. Bright Data SERP/Web Unlocker
-//                      같은 서버사이드 프록시로 스케일 가능 (brightdata.ts와 같은 패턴).
+//   - "public"      : 로그인 없이 검색 결과가 그대로 나온다. 공개 가격 검색/Web Unlocker
+//                      API 같은 서버사이드 프록시로 스케일 가능 (priceSearch.ts와 같은 패턴).
 //   - "login_wall"  : 검색 결과 자체가 로그인/가입을 요구한다. 서버가 직접 fetch()해서는
 //                      못 뚫는다 — chrome_bridge로 사용자의 실제 로그인 세션을 빌리는
 //                      데스크톱 에이전트 경로만 통한다 (README의 "로그인 필요 페이지" 케이스와 동일).
@@ -12,7 +12,7 @@
 //   - "app_only"    : 웹 검색 자체가 앱/모바일 전용이거나 지역 제한이 심해 URL 패턴이
 //                      불안정하다 (예: 중국 본토 도메인이 해외 IP로 접속 시 다른 화면을 보여줌).
 //
-// 즉 "public"인 몰은 Bright Data로 서버가 직접 긁어서 findBetterPrice류 자동 스캔에 넣을 수
+// 즉 "public"인 몰은 공개 가격 API로 서버가 직접 긁어서 findBetterPrice류 자동 스캔에 넣을 수
 // 있고, "login_wall"/"app_only"인 몰은 chrome_bridge로 사용자가 직접 열어야 값이 나온다 —
 // 하나의 스크레이퍼로 다 통일할 수 없다는 뜻이라 몰마다 이 필드를 꼭 확인하고 붙일 것.
 export interface GlobalMall {
@@ -60,7 +60,7 @@ export const GLOBAL_MALLS: GlobalMall[] = [
     currency: "KRW",
     search_url: (q) => `https://www.temu.com/search_result.html?search_key=${encodeURIComponent(q)}`,
     scrape_path: "login_wall",
-    note: "검색 결과 페이지 자체가 로그인/가입 화면으로 리다이렉트된다. Bright Data로 못 뚫으면 chrome_bridge로 열어 로그인 넛지 → handoff/takeover 경로만 남는다.",
+    note: "검색 결과 페이지 자체가 로그인/가입 화면으로 리다이렉트된다. 공개 가격 API로 못 뚫으면 chrome_bridge로 열어 로그인 넛지 → handoff/takeover 경로만 남는다.",
   },
   {
     id: "taobao",

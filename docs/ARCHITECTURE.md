@@ -48,7 +48,7 @@ submit_product_detail(product_id, detail, tags?) ← 기본 경로: chrome_bridg
 enrich_product(product_id)                      ← 선택적 지름길, 있으면만
   1. products에서 product_url 조회
   2. 서버에 등록된 보조 데이터 소스(예: 유료 스크래퍼 API)로 상세페이지 열기
-     — 토큰 미설정/MOCK_BRIGHTDATA=1이면 스킵(기본값)
+     — 토큰 미설정/MOCK_PRICE_API=1이면 스킵(기본값)
   3. 실패하면 데모 시드(demo-shops.json)에서 같은 product_url 조회
   4. 둘 다 없으면 NO_DETAIL_SOURCE — 호출자는 submit_product_detail로 직접 채워야 함
      (5~7단계는 submit_product_detail과 동일하게 처리)
@@ -82,7 +82,7 @@ API 응답은 항상 `hasCredential: boolean`만 노출한다 — `credential_re
 ```
 analyze_interests()      purchases → 태그·재구매주기·가격민감도 → interests
                           (기본은 에이전트가 자기 LLM으로 직접 요약; 서버 자동 배경 스캔에서
-                          선택적으로 쓰고 싶을 때만 Qwen 키 사용 — server/src/providers/qwen.ts)
+                          선택적으로 쓰고 싶을 때만 LLM_API_KEY 사용 — server/src/providers/llm.ts)
 find_better_price(pid)   넛지 배너용 자동 스캔, 기본은 mock 가격 provider → deals
                           (대화 중 직접 가격 비교는 에이전트가 chrome_bridge로 확인)
 ```

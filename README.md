@@ -120,7 +120,7 @@ bun run dev
 
 Open `http://localhost:8787`.
 
-The app works with mock data when provider keys are absent. For real AI-personalized responses, set `DASHSCOPE_API_KEY` in `.env`; keep every provider key server-side.
+The app works with mock data when provider keys are absent. For real AI-personalized responses, set `LLM_API_KEY` (plus `LLM_BASE_URL`/`LLM_MODEL`) in `.env`; keep every provider key server-side.
 
 ## Verify
 

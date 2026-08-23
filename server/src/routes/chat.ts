@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { getDb } from "../db/client";
 import { listDeals } from "../core/deals";
 import { readProfile } from "../memory/store";
-import { chatWithPersonalShopper } from "../providers/qwen";
+import { chatWithPersonalShopper } from "../providers/llm";
 
 export const chatRoute = new Hono();
 

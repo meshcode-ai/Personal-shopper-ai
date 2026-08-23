@@ -1,6 +1,8 @@
-// Qwen Cloud (Alibaba Cloud Model Studio, OpenAI 호환 엔드포인트) — 취향 추론 두뇌.
-// DASHSCOPE_API_KEY가 없거나 MOCK_LLM=1이면 네트워크 없이도 배관을 검증할 수 있는
-// 결정적 규칙 기반 폴백으로 동작한다 (스모크테스트 / 오프라인 데모용).
+// 선택적 클라우드 LLM 연동 (OpenAI 호환 엔드포인트라면 어디든) — 취향 추론 두뇌.
+// LLM_API_KEY/LLM_BASE_URL/LLM_MODEL 중 하나라도 없거나 MOCK_LLM=1이면 네트워크 없이도
+// 배관을 검증할 수 있는 결정적 규칙 기반 폴백으로 동작한다 (스모크테스트 / 오프라인 데모용).
+// 이 서버 호출 자체도 필수는 아니다 — 이미 이 프로젝트를 다루고 있는 코딩 에이전트(Claude,
+// Codex 등)의 LLM으로 취향 분석/태그 추출을 직접 시켜도 된다.
 export interface PurchaseForAnalysis {
   item_name: string;
   price: number;
@@ -27,15 +29,15 @@ export interface ShoppingChatContext {
 
 export interface ShoppingChatResult {
   message: string;
-  mode: "qwen" | "mock";
+  mode: "cloud" | "mock";
 }
 
-// 채팅은 서버에서만 Qwen을 호출한다. 브라우저에는 API 키·구매 원문·토큰을 절대 전달하지 않는다.
+// 채팅은 서버에서만 클라우드 LLM을 호출한다. 브라우저에는 API 키·구매 원문·토큰을 절대 전달하지 않는다.
 export async function chatWithPersonalShopper(
   message: string,
   context: ShoppingChatContext,
 ): Promise<ShoppingChatResult> {
-  if (process.env.MOCK_LLM === "1" || !process.env.DASHSCOPE_API_KEY) {
+  if (process.env.MOCK_LLM === "1" || !process.env.LLM_API_KEY || !process.env.LLM_BASE_URL || !process.env.LLM_MODEL) {
     const bestDeal = context.deals[0];
     const dealHint = bestDeal
       ? `지금은 ${bestDeal.item_name}을 ${bestDeal.found_shop}에서 ${bestDeal.found_price.toLocaleString()}원(${bestDeal.savings_pct}% 절약)으로 볼 수 있어요.`
@@ -46,8 +48,8 @@ export async function chatWithPersonalShopper(
     };
   }
 
-  const baseUrl = process.env.QWEN_BASE_URL ?? "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
-  const model = process.env.QWEN_MODEL ?? "qwen3-max";
+  const baseUrl = process.env.LLM_BASE_URL as string;
+  const model = process.env.LLM_MODEL as string;
   const system = `너는 한국어 퍼스널 쇼핑 AI다. 사용자의 구매 기록과 취향 프로필을 바탕으로 쇼핑을 돕는다.
 답변은 친절하고 짧은 한국어로 쓴다. 해외/글로벌 쇼핑몰 상품명은 자연스러운 한국어 검색어와 함께 설명한다.
 제공된 딜 데이터에 없는 현재 가격·재고·할인율을 지어내지 마라. 개인 구매기록·자격증명·API 키는 요약해도 노출하지 마라.
@@ -63,7 +65,7 @@ export async function chatWithPersonalShopper(
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${process.env.DASHSCOPE_API_KEY}`,
+      authorization: `Bearer ${process.env.LLM_API_KEY}`,
     },
     body: JSON.stringify({
       model,
@@ -75,21 +77,21 @@ export async function chatWithPersonalShopper(
     }),
   });
 
-  if (!res.ok) throw new Error(`Qwen API 오류: ${res.status}`);
+  if (!res.ok) throw new Error(`LLM API 오류: ${res.status}`);
   const data = (await res.json()) as any;
   const reply = data.choices?.[0]?.message?.content?.trim();
-  if (!reply) throw new Error("Qwen 응답에 content가 없음");
-  return { message: reply, mode: "qwen" };
+  if (!reply) throw new Error("LLM 응답에 content가 없음");
+  return { message: reply, mode: "cloud" };
 }
 
 export async function analyzeInterests(
   purchases: PurchaseForAnalysis[],
   previousProfileMd: string,
 ): Promise<AnalysisResult> {
-  if (process.env.MOCK_LLM === "1" || !process.env.DASHSCOPE_API_KEY) {
+  if (process.env.MOCK_LLM === "1" || !process.env.LLM_API_KEY || !process.env.LLM_BASE_URL || !process.env.LLM_MODEL) {
     return mockAnalyze(purchases);
   }
-  return callQwen(purchases, previousProfileMd);
+  return callLlm(purchases, previousProfileMd);
 }
 
 function mockAnalyze(purchases: PurchaseForAnalysis[]): AnalysisResult {
@@ -113,7 +115,7 @@ function mockAnalyze(purchases: PurchaseForAnalysis[]): AnalysisResult {
   const profileMarkdown = `# 내 쇼핑 프로필
 
 _마지막 갱신: ${new Date().toISOString()}_
-_생성 방식: mock 분석 — MOCK_LLM=1 또는 DASHSCOPE_API_KEY 미설정 시 이 경로를 탄다_
+_생성 방식: mock 분석 — MOCK_LLM=1 또는 LLM_API_KEY 미설정 시 이 경로를 탄다_
 
 ## 구매 패턴
 
@@ -127,12 +129,12 @@ ${lines.join("\n") || "(아직 데이터 없음)"}
   return { interests, profileMarkdown };
 }
 
-async function callQwen(
+async function callLlm(
   purchases: PurchaseForAnalysis[],
   previousProfileMd: string,
 ): Promise<AnalysisResult> {
-  const baseUrl = process.env.QWEN_BASE_URL ?? "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
-  const model = process.env.QWEN_MODEL ?? "qwen3-max";
+  const baseUrl = process.env.LLM_BASE_URL as string;
+  const model = process.env.LLM_MODEL as string;
 
   const system = `너는 개인 쇼핑 데이터를 분석해 취향 프로필을 유지보수하는 에이전트다.
 기존 프로필(markdown)과 새 구매내역을 보고, 갱신된 프로필 전체를 markdown으로,
@@ -150,7 +152,7 @@ ${JSON.stringify(purchases, null, 2)}`;
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${process.env.DASHSCOPE_API_KEY}`,
+      authorization: `Bearer ${process.env.LLM_API_KEY}`,
     },
     body: JSON.stringify({
       model,
@@ -163,12 +165,12 @@ ${JSON.stringify(purchases, null, 2)}`;
   });
 
   if (!res.ok) {
-    throw new Error(`Qwen API 오류: ${res.status} ${await res.text()}`);
+    throw new Error(`LLM API 오류: ${res.status} ${await res.text()}`);
   }
 
   const data = (await res.json()) as any;
   const content: string | undefined = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error("Qwen 응답에 content가 없음");
+  if (!content) throw new Error("LLM 응답에 content가 없음");
 
   return JSON.parse(content) as AnalysisResult;
 }
@@ -199,10 +201,10 @@ export async function extractProductTags(
   detailContent: string,
   price: number | null,
 ): Promise<{ tags: ProductTag[] }> {
-  if (process.env.MOCK_LLM === "1" || !process.env.DASHSCOPE_API_KEY) {
+  if (process.env.MOCK_LLM === "1" || !process.env.LLM_API_KEY || !process.env.LLM_BASE_URL || !process.env.LLM_MODEL) {
     return mockExtractTags(title, detailContent, price);
   }
-  return callQwenForTags(title, detailContent, price);
+  return callLlmForTags(title, detailContent, price);
 }
 
 function mockExtractTags(
@@ -226,13 +228,13 @@ function mockExtractTags(
   return { tags };
 }
 
-async function callQwenForTags(
+async function callLlmForTags(
   title: string,
   detailContent: string,
   price: number | null,
 ): Promise<{ tags: ProductTag[] }> {
-  const baseUrl = process.env.QWEN_BASE_URL ?? "https://dashscope-intl.aliyuncs.com/compatible-mode/v1";
-  const model = process.env.QWEN_MODEL ?? "qwen3-max";
+  const baseUrl = process.env.LLM_BASE_URL as string;
+  const model = process.env.LLM_MODEL as string;
 
   const system = `상품 제목과 상세설명에서 구조화된 태그를 추출하라.
 각 태그는 {"name": string, "category": "브랜드"|"카테고리"|"속성"|"가격대"} 형식이다.
@@ -244,7 +246,7 @@ async function callQwenForTags(
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${process.env.DASHSCOPE_API_KEY}`,
+      authorization: `Bearer ${process.env.LLM_API_KEY}`,
     },
     body: JSON.stringify({
       model,
@@ -256,11 +258,11 @@ async function callQwenForTags(
     }),
   });
 
-  if (!res.ok) throw new Error(`Qwen API 오류: ${res.status} ${await res.text()}`);
+  if (!res.ok) throw new Error(`LLM API 오류: ${res.status} ${await res.text()}`);
 
   const data = (await res.json()) as any;
   const content: string | undefined = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error("Qwen 응답에 content가 없음");
+  if (!content) throw new Error("LLM 응답에 content가 없음");
 
   return JSON.parse(content) as { tags: ProductTag[] };
 }

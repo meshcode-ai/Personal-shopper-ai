@@ -1,5 +1,5 @@
 // 스모크 테스트 — "서비스가 죽어있지 않다"를 증명하는 최소 집합.
-// 실제 chrome_bridge / Bright Data / Qwen / OS 키체인 호출은 MOCK_* 플래그로 스텁하고,
+// 실제 chrome_bridge / 가격 API / LLM / OS 키체인 호출은 MOCK_* 플래그로 스텁하고,
 // 온보딩 → 자격증명 → 싱크 → 상품 카탈로그 → 크롤링/태깅 → 분석 → 검색/개인화 → 추천의
 // 엔드투엔드 배관이 끊기지 않았는지만 검증한다.
 //
@@ -14,7 +14,7 @@ const workDir = mkdtempSync(join(tmpdir(), "personal-shopper-smoke-"));
 process.env.DB_PATH = join(workDir, "test.sqlite");
 process.env.MEMORY_DIR = join(workDir, "memory");
 process.env.MOCK_LLM = "1";
-process.env.MOCK_BRIGHTDATA = "1";
+process.env.MOCK_PRICE_API = "1";
 process.env.MOCK_KEYCHAIN = "1";
 
 const { app } = await import("../server/src/index.ts");
@@ -176,7 +176,7 @@ describe("smoke: 상품 상세 크롤링 + 구조화 태그", () => {
   });
 });
 
-describe("smoke: 취향 분석 (Qwen 대역, PROFILE.md 갱신)", () => {
+describe("smoke: 취향 분석 (LLM 대역, PROFILE.md 갱신)", () => {
   test("POST /api/analyze → interests 생성 + PROFILE.md 갱신", async () => {
     const { status, json } = await call("POST", "/api/analyze");
     expect(status).toBe(200);
@@ -196,7 +196,7 @@ describe("smoke: 취향 분석 (Qwen 대역, PROFILE.md 갱신)", () => {
   });
 });
 
-describe("smoke: Qwen 퍼스널 쇼핑 채팅", () => {
+describe("smoke: LLM 퍼스널 쇼핑 채팅", () => {
   test("POST /api/chat → 구매·딜 문맥의 mock 응답", async () => {
     const { status, json } = await call("POST", "/api/chat", {
       message: "해외몰에서 살 러닝화 검색어를 한국어로 알려줘",
@@ -233,7 +233,7 @@ describe("smoke: 검색 — 상단 검색바 + 개인화 정렬", () => {
   });
 });
 
-describe("smoke: 최저가 탐색 (Bright Data 대역)", () => {
+describe("smoke: 최저가 탐색 (가격 API 대역)", () => {
   test("POST /api/purchases/:id/find-deal → deal 기록", async () => {
     const { status, json } = await call("POST", `/api/purchases/${purchaseId}/find-deal`);
     expect(status).toBe(200);
@@ -314,7 +314,7 @@ describe("smoke: 데모 시드 매트릭스 (알리익스프레스 · 네이버�
   });
 });
 
-describe("smoke: 상세 크롤링 폴백 체인 (Bright Data/데모 실패 → chrome_bridge 수동 제출)", () => {
+describe("smoke: 상세 크롤링 폴백 체인 (가격 API/데모 실패 → chrome_bridge 수동 제출)", () => {
   let fallbackShopId: number;
   let fallbackProductId: number;
 

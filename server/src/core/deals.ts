@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { findBetterPrice, type DealResult } from "../providers/brightdata";
+import { findBetterPrice, type DealResult } from "../providers/priceSearch";
 import { recordPriceSnapshot } from "./priceSnapshots";
 import { getProduct } from "./products";
 import { getPurchase } from "./purchases";
@@ -70,7 +70,7 @@ export async function findDealForProduct(
 // 넛지 스캔 — 사용자가 하나하나 "최저가 찾기"를 누를 필요 없이, 아직 딜을 찾아본 적
 // 없는 구매내역을 한 번에 훑어서 채운다. 이미 딜이 있는 구매는 건너뛰어(멱등) 같은
 // 페이지를 여러 번 새로고침해도 deals 테이블이 부풀지 않는다.
-// limit은 한 번의 스캔에서 Bright Data(또는 mock)를 몇 번까지 호출할지 상한이다 —
+// limit은 한 번의 스캔에서 가격 API(또는 mock)를 몇 번까지 호출할지 상한이다 —
 // 구매내역이 아주 많을 때 페이지 로드 한 번에 전부 긁는 걸 막기 위함.
 export async function scanForDeals(db: Database, limit = 20): Promise<DealWithContext[]> {
   const candidates = db

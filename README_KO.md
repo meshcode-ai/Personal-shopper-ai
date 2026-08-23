@@ -448,7 +448,7 @@ PATCH  /api/products/:id/watch  # { "target_price": 15000 } 등록, { "target_pr
   (`server/src/providers/overseas.ts`).
 - **가격 타이밍**은 스캔이 실제로 일어난 시점에만 `price_snapshots`에 한 줄씩 쌓인다 — 정기
   크론이 아니라, 자주 볼수록 더 정확해지는 구조다. mock 가격에는 ±6% 지터를 줘서
-  (`server/src/providers/brightdata.ts`) 매번 완전히 똑같은 값만 나오지 않게 했다.
+  (`server/src/providers/priceSearch.ts`) 매번 완전히 똑같은 값만 나오지 않게 했다.
 - **개당(단위) 가격**은 상품명에서 "24개입"/"320T" 같은 수량 패턴이 파싱될 때만 붙는다.
   같은 상품의 다른 용량/개수 변형을 찾아와 교차비교하는 기능은 아니다 — mock 가격
   제공자가 그 변형들을 따로 찾아오는 능력이 없어서 스코프를 좁혔다 (`server/src/core/unitPrice.ts`).
@@ -515,10 +515,10 @@ bun test                # 스모크테스트 32개
 ```
 
 키 없이도 전부 동작한다. 상품 상세/태그/가격비교는 기본적으로 chrome_bridge(+ 에이전트의
-LLM)를 쓰므로 애초에 키가 필요 없다. `.env.example`에 있는 `DASHSCOPE_API_KEY` /
-`BRIGHTDATA_API_TOKEN`은 넛지 배너 자동 스캔이나 취향 프로필 요약을 조금 더 정교하게
+LLM)를 쓰므로 애초에 키가 필요 없다. `.env.example`에 있는 `LLM_API_KEY` /
+`PRICE_API_TOKEN`은 넛지 배너 자동 스캔이나 취향 프로필 요약을 조금 더 정교하게
 만들고 싶을 때만 선택적으로 채우는 값이고, 없으면 결정적 mock 응답(`MOCK_LLM` /
-`MOCK_BRIGHTDATA`)으로 자동 대체된다. macOS가 아니거나 `MOCK_KEYCHAIN=1`이면 자격증명도
+`MOCK_PRICE_API`)으로 자동 대체된다. macOS가 아니거나 `MOCK_KEYCHAIN=1`이면 자격증명도
 파일 기반 mock 키체인으로 폴백해서 데모/테스트 배관이 끊기지 않는다.
 
 ---
@@ -536,7 +536,7 @@ personal-shopper-ai/
 │   │                   agent/tools.ts가 공유
 │   ├── memory/        store.ts — md 미러(shops.md, PROFILE.md) 재생성
 │   ├── agent/         tools.ts (tool-calling 스키마) · system-prompt.ts
-│   ├── providers/     qwen.ts · brightdata.ts(SERP + 상세 Unlocker, mock 지터 포함) ·
+│   ├── providers/     llm.ts · priceSearch.ts(SERP + 상세 Unlocker, mock 지터 포함) ·
 │   │                   overseas.ts(해외직구 관/부가세 추정) · keychain.ts
 │   │                   (전부 mock 폴백 내장)
 │   ├── routes/        shops(+credentials,+purchases/import) · purchases · products(+detail,+watch) ·

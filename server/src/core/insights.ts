@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { findBetterPrice } from "../providers/brightdata";
+import { findBetterPrice } from "../providers/priceSearch";
 import { estimateOverseasCost } from "../providers/overseas";
 import { categorize } from "./categories";
 import { listDeals, scanForDeals } from "./deals";
@@ -53,7 +53,7 @@ function upsertInsight(
 
 const HOT_DEAL_THRESHOLD_PCT = 15; // 이 이상 싸야 "핫딜"로 띄운다
 const MONTHLY_SAVING_MIN_PCT = 5; // 이 이상 싸야 "매달 아낄 수 있어요" 문구를 붙인다
-const RESCAN_STALE_HOURS = 24; // 이 시간 안에 갱신된 monthly_saving은 Bright Data를 다시 안 부른다
+const RESCAN_STALE_HOURS = 24; // 이 시간 안에 갱신된 monthly_saving은 가격 API를 다시 안 부른다
 const RESTOCK_DUE_RATIO = 0.8; // 평균 재구매 간격의 80% 이상 지나면 "슬슬 다시 살 때"로 본다
 const OVERSEAS_MIN_PRICE_KRW = 30_000; // 이 아래면 배송비/통관 신경 쓸 값어치가 없다고 본다
 const OVERSEAS_MIN_SAVING_PCT = 10; // 관/부가세·배송비까지 포함해서 이 이상 싸야 인사이트로 띄운다
@@ -82,7 +82,7 @@ export async function generateInsights(db: Database, limit = 10): Promise<Insigh
 }
 
 // 소모품 재구매 시점 예측 — 평균 구매 간격 대비 마지막 구매 후 얼마나 지났는지만
-// 계산한다. DB에 이미 있는 bought_at만 쓰므로 Bright Data/Qwen 호출이 전혀 없어
+// 계산한다. DB에 이미 있는 bought_at만 쓰므로 외부 API 호출이 전혀 없어
 // 요청마다 부담 없이 돌릴 수 있다. 전자기기/의류처럼 간격이 불규칙한 상품은
 // daysSinceLast/avgInterval 비율이 낮게 나와 자연히 걸러진다.
 function generateRestockInsights(db: Database, limit: number) {
@@ -148,7 +148,7 @@ async function generateHotDealInsights(db: Database, limit: number) {
 
 async function generateMonthlySavingInsights(db: Database, limit: number) {
   // 재구매 패턴이 뚜렷한(2번 이상 산) 상품 위주로, 최근 갱신된 건 건너뛴다 —
-  // 매 스캔마다 Bright Data를 다시 부르지 않기 위함.
+  // 매 스캔마다 가격 API를 다시 부르지 않기 위함.
   const candidates = db
     .query(
       `SELECT p.id, p.title, p.last_price FROM products p
@@ -260,7 +260,7 @@ async function generateOverseasInsights(db: Database, limit: number): Promise<vo
 
 // 가격 타이밍 — 스캔이 쌓일 때마다(monthly_saving/watchlist/"다른 쇼핑몰 찾기" 버튼)
 // price_snapshots에 기록되는 이력을 보고, 지금이 최근 중 최저가인지 평소보다
-// 비싼 시점인지를 조언한다. Bright Data/Qwen 추가 호출 없이 이미 쌓인 이력만 본다.
+// 비싼 시점인지를 조언한다. 외부 API 추가 호출 없이 이미 쌓인 이력만 본다.
 function generatePriceTimingInsights(db: Database, limit: number): void {
   const candidates = db
     .query(

@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { readProfile, writeProfile } from "../memory/store";
-import { analyzeInterests, type PurchaseForAnalysis } from "../providers/qwen";
+import { analyzeInterests, type PurchaseForAnalysis } from "../providers/llm";
 import { listPurchasesForShop } from "./purchases";
 import { listShops } from "./shops";
 

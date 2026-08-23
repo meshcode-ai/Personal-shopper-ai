@@ -1,4 +1,4 @@
-// OpenAI/Qwen 호환 tool-calling 스키마 + 디스패처.
+// OpenAI 호환 tool-calling 스키마 + 디스패처.
 // 지금 라우트들은 core를 직접 호출하지만, 대화형 에이전트 루프(예: /api/chat)를
 // 붙일 때는 이 TOOLS 배열을 그대로 LLM에 tools로 전달하고 dispatchTool로 실행하면 된다.
 // 즉, "에이전트가 시스템 인스트럭션으로 샵 테이블을 동적으로 CRUD 관리"하는 설계의
