@@ -6,8 +6,7 @@
    외부로 나가는 것은 가격 조회용 상품명과 익명화된 취향 요약뿐이다.
 2. **로그인 벽은 뚫지 않고 우회한다.** 로그인이 필요하든 공개 데이터든, 전부 사용자 본인의
    실제 브라우저 세션(chrome_bridge)으로 직접 확인한다 — 별도 스크래핑 API로 우회하지 않는다.
-3. **LLM이 만든 코드는 로컬에서 바로 실행하지 않는다.** 파서 자가수복은 Daytona 샌드박스에서만.
-4. **자격증명은 DB에 없다.** OS 키체인에 두고 DB에는 참조 키만.
+3. **자격증명은 DB에 없다.** OS 키체인에 두고 DB에는 참조 키만.
 
 ## 컴포넌트
 
@@ -24,7 +23,7 @@ import_purchases(shop_id)                      ← 에이전트가 chrome_bridge
   4. 주문 목록 DOM 읽기 → 페이지네이션 순회, 파서로 구조화
   5. (서버) orders 배열을 받아 findOrCreateProduct로 상품 카탈로그 upsert
      → purchases UPSERT (raw_json 함께 보존) → 신규 행일 때만 purchase_count++
-  6. 파싱 실패율이 임계치를 넘으면 repair_parser 트리거
+  6. 파싱 실패율이 높으면 에이전트가 파서 코드를 직접 고쳐 재시도한다
 
 seedDemoPurchases(shop_id)                      ← chrome_bridge 미연결 시 데모 대역
   샵 이름이 데모 4종과 일치하면 demo-shops.json에서 같은 insertOrders()로 적재
@@ -74,22 +73,16 @@ set_shop_credential(shop_id, username, password)
 API 응답은 항상 `hasCredential: boolean`만 노출한다 — `credential_ref`도 내부 구현
 디테일이라 클라이언트에 그대로 보내지 않는다 (`routes/shops.ts::serializeShop`).
 
-### Parser Self-Repair (`server/src/providers/daytona.ts`)
-쇼핑몰 DOM은 자주 바뀌고 파서는 깨진다.
-
-```
-repair_parser(shop_id)
-  1. 실패한 raw_json 샘플 N건 수집
-  2. Qwen에게 "이 HTML에서 상품명/가격/날짜를 뽑는 함수를 써라" 요청
-  3. 생성된 코드를 Daytona 샌드박스에 업로드
-  4. 샘플에 대해 실행 → 추출 정확도 측정
-  5. 임계치 통과 시에만 로컬 파서로 승격, parser_version++
-```
+쇼핑몰 DOM은 자주 바뀌고 파서는 깨진다 — 별도 샌드박스 인프라 없이, 파서가 깨졌다는 신호가
+오면 이미 코드를 다루고 있는 에이전트(Claude Code, Codex 등)가 직접 파서를 열어 고치고
+`parser_version`을 올린다. 로컬에서 바로 실행하지 않고 에이전트가 diff로 제안 → 사용자가
+확인 후 반영하는 흐름이라, 별도 실행 샌드박스가 필요 없다.
 
 ### Recommender (`server/src/providers/`)
 ```
 analyze_interests()      purchases → 태그·재구매주기·가격민감도 → interests
-                          (LLM 요약, 키 없으면 mock — server/src/providers/qwen.ts)
+                          (기본은 에이전트가 자기 LLM으로 직접 요약; 서버 자동 배경 스캔에서
+                          선택적으로 쓰고 싶을 때만 Qwen 키 사용 — server/src/providers/qwen.ts)
 find_better_price(pid)   넛지 배너용 자동 스캔, 기본은 mock 가격 provider → deals
                           (대화 중 직접 가격 비교는 에이전트가 chrome_bridge로 확인)
 ```

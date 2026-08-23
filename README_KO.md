@@ -258,12 +258,7 @@ Personal Shopper AI는 내가 실제로 쓰는 쇼핑몰(쿠팡 · 네이버쇼�
    ┌────▼────┐
    │ Chrome  │  구매내역 · 상품 상세 · 가격 비교, 전부 여기서
    │ (내 세션)│  chrome_bridge로 직접 읽어온다
-   └────┬────┘
-        │
- ┌──────▼──────┐
- │  Daytona    │  파서 코드를 샌드박스에서
- │  샌드박스    │  안전하게 실행/자가수정
- └─────────────┘
+   └─────────┘
 ```
 
 ---
@@ -466,8 +461,8 @@ PATCH  /api/products/:id/watch  # { "target_price": 15000 } 등록, { "target_pr
 ## 에이전트 툴 스펙
 
 에이전트는 시스템 인스트럭션(`server/src/agent/system-prompt.ts`)으로 아래 툴들을 이해하고
-샵/상품 테이블을 동적으로 관리한다. 스키마는 `server/src/agent/tools.ts`에 OpenAI/Qwen
-호환 tool-calling 형식으로 정의돼 있다.
+샵/상품 테이블을 동적으로 관리한다. 스키마는 `server/src/agent/tools.ts`에 OpenAI 호환
+tool-calling 형식으로 정의돼 있다.
 
 | 툴 | 설명 |
 | --- | --- |
@@ -484,7 +479,7 @@ PATCH  /api/products/:id/watch  # { "target_price": 15000 } 등록, { "target_pr
 | `analyze_interests()` | 구매 패턴 → interests 갱신 (에이전트/LLM 요약, 키 없으면 mock) |
 | `search_products(query?, shop_id?, personalized?)` | 카탈로그 검색 (기본 개인화 정렬) |
 | `find_better_price(purchase_id)` | 넛지 배너용 자동 가격 스캔(mock 기본) → deals 기록. 대화 중 직접 가격 비교는 chrome_bridge로 |
-| `repair_parser(shop_id)` | 파서 실패 시 Daytona 샌드박스에서 새 파서 생성·검증 (설계 단계) |
+| `repair_parser(shop_id)` | 파서 실패 시 에이전트가 파서 코드를 직접 열어 고치고 `parser_version`을 올림 (설계 단계) |
 
 > `sync_purchase_history` / `import_purchases`, `enrich_product` / `submit_product_detail`은
 > 각각 "보조 지름길 실패 시 기본 경로" 쌍이다 — 기본은 항상 chrome_bridge다. 자세한 내용은
@@ -503,8 +498,6 @@ PATCH  /api/products/:id/watch  # { "target_price": 15000 } 등록, { "target_pr
 | 브라우저 자동화 | **chrome_bridge** | 사용자 실제 세션 재사용 |
 
 > 프론트는 지금 바닐라 JS 한 파일이다. 팀이 Vite + React/Svelte에 익숙하면 `web/`만 갈아끼우면 되고, API 계약(`/api/*`)은 그대로 유지된다.
-
-> **Tauri를 안 쓴 이유**: Tauri는 OS 네이티브 웹뷰(macOS = WKWebView)를 쓰기 때문에 번들은 가볍지만, Safari 엔진 호환성 이슈에 시간을 태울 위험이 있다. 로컬 서버 + 브라우저 조합으로도 "내 기기에만 데이터가 있다"는 서사는 그대로 유지된다.
 
 ---
 
