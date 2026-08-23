@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.local
+*.sqlite
+*.sqlite-journal
+*.db
+.DS_Store
+bun.lockb
+
+# 런타임 생성물 — 개인 구매내역/취향/자격증명 mock이 담긴다. 절대 커밋하지 않는다.
+/data/
+/memory/
+
+# MeshCode 에이전트 세션 스크래치 (chrome_bridge 응답 캐시 등) — 프로젝트 산출물 아님.
+/.meshcode/

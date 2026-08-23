@@ -1,0 +1,238 @@
+{
+  "쿠팡": {
+    "base_url": "https://www.coupang.com",
+    "order_history_url": "https://www.coupang.com/mypage/orders",
+    "orders": [
+      {
+        "item_name": "동서 맥심 모카골드 마일드 커피믹스 320T",
+        "price": 24900,
+        "quantity": 1,
+        "bought_at": "2026-05-02",
+        "product_url": "https://www.coupang.com/vp/products/1000001"
+      },
+      {
+        "item_name": "동서 맥심 모카골드 마일드 커피믹스 320T",
+        "price": 25900,
+        "quantity": 1,
+        "bought_at": "2026-06-30",
+        "product_url": "https://www.coupang.com/vp/products/1000001"
+      },
+      {
+        "item_name": "나이키 런닝화 페가수스 41",
+        "price": 159000,
+        "quantity": 1,
+        "bought_at": "2026-04-10",
+        "product_url": "https://www.coupang.com/vp/products/1000002"
+      },
+      {
+        "item_name": "삼다수 2L 12펫",
+        "price": 13900,
+        "quantity": 1,
+        "bought_at": "2026-05-20",
+        "product_url": "https://www.coupang.com/vp/products/1000003"
+      },
+      {
+        "item_name": "삼다수 2L 12펫",
+        "price": 13500,
+        "quantity": 1,
+        "bought_at": "2026-07-01",
+        "product_url": "https://www.coupang.com/vp/products/1000003"
+      },
+      {
+        "item_name": "다이슨 에어랩 컴플리트",
+        "price": 599000,
+        "quantity": 1,
+        "bought_at": "2026-03-15",
+        "product_url": "https://www.coupang.com/vp/products/1000004"
+      }
+    ],
+    "productDetails": {
+      "https://www.coupang.com/vp/products/1000001": {
+        "title": "동서 맥심 모카골드 마일드 커피믹스 320T",
+        "description": "부드러운 밀크커피, 사무실·홈카페 스테디셀러",
+        "detail_content": "용량: 320T (11.5g x 320개입)\n원산지: 국내 제조\n보관방법: 직사광선을 피해 서늘한 곳에 보관\n타사 대비 넉넉한 대용량 구성으로 재구매율이 높은 상품입니다.",
+        "image_url": "https://image.coupangcdn.com/sample/maxim.jpg"
+      },
+      "https://www.coupang.com/vp/products/1000002": {
+        "title": "나이키 런닝화 페가수스 41",
+        "description": "쿠셔닝이 강화된 데일리 러닝화",
+        "detail_content": "갑피: 메쉬 소재\n중창: 리액트 폼\n색상: 블랙/화이트\n러너들 사이에서 꾸준히 사랑받는 스테디셀러 모델입니다.",
+        "image_url": "https://image.coupangcdn.com/sample/pegasus41.jpg"
+      },
+      "https://www.coupang.com/vp/products/1000003": {
+        "title": "삼다수 2L 12펫",
+        "description": "제주 화산암반수 생수",
+        "detail_content": "용량: 2L x 12병\n원산지: 제주도\n무기질이 풍부한 화산암반수를 담았습니다.",
+        "image_url": "https://image.coupangcdn.com/sample/samdasoo.jpg"
+      },
+      "https://www.coupang.com/vp/products/1000004": {
+        "title": "다이슨 에어랩 컴플리트",
+        "description": "멀티스타일러 헤어 디바이스",
+        "detail_content": "코안다 효과를 이용한 열 손상 없는 스타일링\n다양한 어태치먼트 구성\n프리미엄 가격대의 뷰티 디바이스입니다.",
+        "image_url": "https://image.coupangcdn.com/sample/airwrap.jpg"
+      }
+    }
+  },
+  "네이버쇼핑": {
+    "base_url": "https://shopping.naver.com",
+    "order_history_url": "https://order.pay.naver.com/home",
+    "orders": [
+      {
+        "item_name": "곰곰 즉석밥 24개입",
+        "price": 15900,
+        "quantity": 1,
+        "bought_at": "2026-04-18",
+        "product_url": "https://shopping.naver.com/product/2000001"
+      },
+      {
+        "item_name": "곰곰 즉석밥 24개입",
+        "price": 16400,
+        "quantity": 1,
+        "bought_at": "2026-06-22",
+        "product_url": "https://shopping.naver.com/product/2000001"
+      },
+      {
+        "item_name": "려 흑임자 두피 샴푸 400ml",
+        "price": 23000,
+        "quantity": 1,
+        "bought_at": "2026-05-05",
+        "product_url": "https://shopping.naver.com/product/2000002"
+      },
+      {
+        "item_name": "아이닉 무선 이어폰 프로",
+        "price": 49000,
+        "quantity": 1,
+        "bought_at": "2026-06-01",
+        "product_url": "https://shopping.naver.com/product/2000003"
+      }
+    ],
+    "productDetails": {
+      "https://shopping.naver.com/product/2000001": {
+        "title": "곰곰 즉석밥 24개입",
+        "description": "국내산 쌀 100% 즉석밥, 대용량 구성",
+        "detail_content": "용량: 210g x 24개\n원산지: 국내산 쌀\n전자레인지 2분이면 완성되는 자취생·1인 가구 스테디셀러.",
+        "image_url": "https://shop-phinf.pstatic.net/sample/gomgom.jpg"
+      },
+      "https://shopping.naver.com/product/2000002": {
+        "title": "려 흑임자 두피 샴푸 400ml",
+        "description": "탈모 증상 완화 기능성 샴푸",
+        "detail_content": "용량: 400ml\n기능성: 탈모 증상 완화(식약처 인증)\n흑임자·검은콩 추출물 함유.",
+        "image_url": "https://shop-phinf.pstatic.net/sample/ryo.jpg"
+      },
+      "https://shopping.naver.com/product/2000003": {
+        "title": "아이닉 무선 이어폰 프로",
+        "description": "노이즈캔슬링 지원 무선 이어폰",
+        "detail_content": "재생시간: 최대 30시간 (케이스 포함)\n방수등급: IPX4\nENC 노이즈캔슬링 통화 지원.",
+        "image_url": "https://shop-phinf.pstatic.net/sample/ainic.jpg"
+      }
+    }
+  },
+  "알리익스프레스": {
+    "base_url": "https://www.aliexpress.com",
+    "order_history_url": "https://www.aliexpress.com/p/order/index.html",
+    "orders": [
+      {
+        "item_name": "미니 블루투스 스피커 방수형",
+        "price": 15200,
+        "quantity": 1,
+        "bought_at": "2026-03-08",
+        "product_url": "https://www.aliexpress.com/item/3000001.html"
+      },
+      {
+        "item_name": "미니 블루투스 스피커 방수형",
+        "price": 14800,
+        "quantity": 1,
+        "bought_at": "2026-07-12",
+        "product_url": "https://www.aliexpress.com/item/3000001.html"
+      },
+      {
+        "item_name": "스마트폰 방수 케이스 범용",
+        "price": 8900,
+        "quantity": 2,
+        "bought_at": "2026-04-25",
+        "product_url": "https://www.aliexpress.com/item/3000002.html"
+      },
+      {
+        "item_name": "무선 충전 거치대 15W",
+        "price": 19900,
+        "quantity": 1,
+        "bought_at": "2026-05-30",
+        "product_url": "https://www.aliexpress.com/item/3000003.html"
+      }
+    ],
+    "productDetails": {
+      "https://www.aliexpress.com/item/3000001.html": {
+        "title": "미니 블루투스 스피커 방수형",
+        "description": "휴대용 아웃도어 방수 스피커",
+        "detail_content": "방수등급: IPX7\n배터리: 1200mAh, 연속재생 8시간\n가성비 좋은 캠핑·샤워용 스피커로 재구매율이 높습니다.",
+        "image_url": "https://ae01.alicdn.com/sample/speaker.jpg"
+      },
+      "https://www.aliexpress.com/item/3000002.html": {
+        "title": "스마트폰 방수 케이스 범용",
+        "description": "IPX8 등급 범용 스마트폰 방수 파우치",
+        "detail_content": "호환: 6.9인치 이하 전 기종\n터치스크린 사용 가능\n수영장·해변에서 자주 재구매되는 소모품형 상품.",
+        "image_url": "https://ae01.alicdn.com/sample/waterproofcase.jpg"
+      },
+      "https://www.aliexpress.com/item/3000003.html": {
+        "title": "무선 충전 거치대 15W",
+        "description": "책상용 15W 고속 무선충전 거치대",
+        "detail_content": "출력: 최대 15W\n호환: Qi 표준 전 기종\n각도 조절 가능한 거치형 디자인.",
+        "image_url": "https://ae01.alicdn.com/sample/wirelesscharger.jpg"
+      }
+    }
+  },
+  "크림": {
+    "base_url": "https://kream.co.kr",
+    "order_history_url": "https://kream.co.kr/my/orders",
+    "orders": [
+      {
+        "item_name": "나이키 덩크 로우 레트로 블랙/화이트",
+        "price": 189000,
+        "quantity": 1,
+        "bought_at": "2026-02-14",
+        "product_url": "https://kream.co.kr/products/4000001"
+      },
+      {
+        "item_name": "뉴발란스 990v6 그레이",
+        "price": 259000,
+        "quantity": 1,
+        "bought_at": "2026-04-02",
+        "product_url": "https://kream.co.kr/products/4000002"
+      },
+      {
+        "item_name": "스투시 8볼 후드 블랙",
+        "price": 179000,
+        "quantity": 1,
+        "bought_at": "2026-05-11",
+        "product_url": "https://kream.co.kr/products/4000003"
+      },
+      {
+        "item_name": "스투시 8볼 후드 블랙",
+        "price": 185000,
+        "quantity": 1,
+        "bought_at": "2026-07-20",
+        "product_url": "https://kream.co.kr/products/4000003"
+      }
+    ],
+    "productDetails": {
+      "https://kream.co.kr/products/4000001": {
+        "title": "나이키 덩크 로우 레트로 블랙/화이트",
+        "description": "스테디셀러 데일리 스니커즈",
+        "detail_content": "컬러웨이: 블랙/화이트 판다\n리셀가 등락 추적 대상 인기 모델\n정가 대비 프리미엄이 안정적으로 유지되는 편입니다.",
+        "image_url": "https://kream-phinf.co.kr/sample/dunklow.jpg"
+      },
+      "https://kream.co.kr/products/4000002": {
+        "title": "뉴발란스 990v6 그레이",
+        "description": "메이드인 USA 그레이 컬러웨이",
+        "detail_content": "생산: 미국\n쿠셔닝: ENCAP 미드솔\n클래식 그레이 컬러웨이로 꾸준히 수요가 있는 모델입니다.",
+        "image_url": "https://kream-phinf.co.kr/sample/990v6.jpg"
+      },
+      "https://kream.co.kr/products/4000003": {
+        "title": "스투시 8볼 후드 블랙",
+        "description": "스트리트 브랜드 시그니처 후드",
+        "detail_content": "소재: 코튼 80% 폴리 20%\n시즌마다 완판되는 시그니처 그래픽\n같은 사이즈를 재구매하는 경우가 많은 인기 상품입니다.",
+        "image_url": "https://kream-phinf.co.kr/sample/stussy8ball.jpg"
+      }
+    }
+  }
+}

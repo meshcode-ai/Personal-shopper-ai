@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🛍️ Personal Shopper AI</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            secondary: "#a53b22",
+            "surface-container": "#f0ecf5",
+            primary: "#15157d",
+            "primary-container": "#2e3192",
+            "inverse-primary": "#c0c1ff",
+            "surface-container-low": "#f5f2fb",
+            "surface-tint": "#4f54b4",
+            tertiary: "#491a00",
+            outline: "#777683",
+            "on-background": "#1b1b21",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-high": "#eae7f0",
+            "outline-variant": "#c7c5d4",
+            background: "#fcf8ff",
+            "primary-fixed": "#e1e0ff",
+            "on-primary-fixed-variant": "#373a9b",
+            "on-primary-fixed": "#04006d",
+            "on-surface-variant": "#464652",
+            "on-primary": "#ffffff",
+            "on-surface": "#1b1b21",
+            surface: "#fcf8ff",
+          },
+          borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" },
+          spacing: { "margin-desktop": "40px", gutter: "24px", unit: "8px", "margin-mobile": "16px" },
+          fontFamily: {
+            "price-tag": ["Hanken Grotesk"],
+            "body-md": ["Inter"],
+            "headline-md": ["Hanken Grotesk"],
+            "headline-lg": ["Hanken Grotesk"],
+            "label-md": ["Inter"],
+          },
+          fontSize: {
+            "price-tag": ["20px", { lineHeight: "24px", fontWeight: "700" }],
+            "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+            "headline-md": ["22px", { lineHeight: "30px", fontWeight: "600" }],
+            "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }],
+            "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "500" }],
+          },
+        },
+      },
+    };
+  </script>
+</head>
+<body class="bg-background font-body-md text-on-surface">
+  <header class="fixed top-0 left-0 right-0 h-20 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-[60] flex items-center px-margin-desktop gap-gutter">
+    <div class="flex items-center gap-unit min-w-[220px]">
+      <span class="text-2xl">🛍️</span>
+      <span class="font-headline-md text-headline-md text-primary">Personal Shopper AI</span>
+    </div>
+    <div class="flex-1 flex justify-center">
+      <div class="w-full max-w-xl relative group">
+        <span id="search-btn" class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant cursor-pointer">search</span>
+        <input id="search-input" class="w-full h-11 pl-12 pr-4 rounded-full bg-surface-container-low/70 border-0 ring-1 ring-outline-variant/30 focus:ring-2 focus:ring-primary transition-all text-body-md" placeholder="내 상품 검색 (예: 커피)" type="text" />
+      </div>
+    </div>
+    <label class="flex items-center gap-2 text-label-md font-label-md text-on-surface-variant whitespace-nowrap cursor-pointer min-w-[140px] justify-end">
+      <input type="checkbox" id="personalized-toggle" checked class="w-4 h-4 accent-primary" />
+      나를 위한 정렬
+    </label>
+  </header>
+
+  <aside class="hidden md:block fixed left-0 top-20 bottom-0 w-72 bg-surface-container-lowest z-40 overflow-y-auto px-6 py-8 shadow-[1px_0_0_0_rgba(0,0,0,0.05)]">
+    <div class="mb-8">
+      <h3 class="text-label-md font-label-md text-outline uppercase tracking-widest mb-4">쇼핑몰</h3>
+      <nav id="shop-tabs" class="flex flex-col gap-1"></nav>
+    </div>
+    <div class="pt-8 border-t border-outline-variant/30">
+      <h3 class="text-label-md font-label-md text-outline uppercase tracking-widest mb-4">카테고리</h3>
+      <nav id="category-tabs" class="flex flex-col gap-1"></nav>
+    </div>
+  </aside>
+
+  <div class="md:pl-72">
+    <main class="pt-20 min-h-screen bg-background">
+      <div class="flex flex-col w-full px-margin-desktop py-12 gap-16 relative">
+        <div class="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none transform translate-x-1/3 -translate-y-1/3"></div>
+
+        <div id="nudge-banner" class="flex flex-col gap-3 z-10"></div>
+
+        <section class="w-full flex flex-col gap-6 z-10">
+          <div>
+            <p class="font-label-md text-label-md text-primary tracking-widest uppercase mb-2">내 쇼핑 기록</p>
+            <h1 class="font-headline-lg text-headline-lg text-on-surface">자주 사는 상품</h1>
+          </div>
+          <div id="product-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+            <p class="empty col-span-full text-on-surface-variant">상품이 없습니다. AI 에이전트에게 자주 쓰는 쇼핑몰을 알려주고 구매내역을 가져와 달라고 하세요.</p>
+          </div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-gutter z-10">
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-8" id="profile-card">
+            <h2 class="font-headline-md text-headline-md text-on-surface mb-4">1. 내 취향 프로필</h2>
+            <button id="analyze-btn" class="px-5 py-3 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:scale-[1.02] transition-transform">🧠 취향 분석하기</button>
+            <pre id="profile-view" class="whitespace-pre-wrap bg-surface-container-low rounded-xl p-4 mt-4 text-body-md leading-relaxed max-h-[420px] overflow-y-auto">아직 분석된 프로필이 없습니다. 먼저 AI 에이전트에게 구매내역을 가져와 달라고 하세요.</pre>
+          </div>
+
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-8" id="deals-card">
+            <h2 class="font-headline-md text-headline-md text-on-surface mb-4">2. 발견된 딜</h2>
+            <div id="deals-list" class="flex flex-col gap-3 mt-2">아직 찾은 딜이 없습니다.</div>
+          </div>
+
+          <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/10 shadow-sm p-8" id="spending-card">
+            <h2 class="font-headline-md text-headline-md text-on-surface mb-1">3. 지출 리포트</h2>
+            <p id="spending-range" class="text-on-surface-variant text-sm mb-4"></p>
+            <div id="spending-total" class="mb-4"></div>
+            <div id="spending-categories" class="flex flex-col gap-2">아직 비교할 만큼 구매내역이 쌓이지 않았어요.</div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="w-full bg-surface-container-lowest border-t border-outline-variant/20 py-8 mt-8">
+      <div class="px-margin-desktop flex justify-between items-center text-label-md text-outline">
+        <span>Personal Shopper AI</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

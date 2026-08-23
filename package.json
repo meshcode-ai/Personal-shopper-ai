@@ -1,0 +1,15 @@
+{
+  "name": "personal-shopper-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "온디바이스 퍼스널 쇼퍼 AI — 내 쇼핑 기록을 읽고 취향을 기억하고 더 싼 곳을 찾아준다",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot server/src/index.ts",
+    "db:migrate": "bun run server/src/db/migrate.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "hono": "^4.6.0"
+  }
+}
