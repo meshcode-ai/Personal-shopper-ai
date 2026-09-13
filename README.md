@@ -24,7 +24,7 @@ It can also translate global-store product names and search terms into terms you
 
 ## How it works
 
-If you just handed this repo's link to your AI agent and it's asking "what is this," here's the one-paragraph version: **it's an AI personal shopper that uses [MeshCode.ai](https://meshcode.ai) as a remote controller talking to your real Chrome browser** — it pulls your purchase history straight out of whatever malls you already shop at (not a scraping proxy, your own already-signed-in session), figures out from those malls roughly what country you're shopping in, and then checks the other major malls people there commonly use so your buying picture isn't limited to one store. It uses all of that purchase history to search the same or similar products across malls and nudge you toward the cheaper, more rational buy — not toward whatever the mall you're currently browsing wants to sell you.
+If you just handed this repo's link to your AI agent and it's asking "what is this," here's the one-paragraph version: **it's an AI personal shopper that uses [MeshCode.ai](https://meshcode.ai?utm_source=github&utm_medium=org_readme&utm_campaign=gh_Personal-shopper-ai) as a remote controller talking to your real Chrome browser** — it pulls your purchase history straight out of whatever malls you already shop at (not a scraping proxy, your own already-signed-in session), figures out from those malls roughly what country you're shopping in, and then checks the other major malls people there commonly use so your buying picture isn't limited to one store. It uses all of that purchase history to search the same or similar products across malls and nudge you toward the cheaper, more rational buy — not toward whatever the mall you're currently browsing wants to sell you.
 
 ```text
 Your selected, already-signed-in Chrome browser
@@ -39,7 +39,7 @@ Your selected, already-signed-in Chrome browser
         Shopping assistant insights + personalized recommendations
 ```
 
-`chrome_bridge` is a free [MeshCode.ai](https://meshcode.ai) tool.
+`chrome_bridge` is a free [MeshCode.ai](https://meshcode.ai?utm_source=github&utm_medium=org_readme&utm_campaign=gh_Personal-shopper-ai) tool.
 
 No extension, credential export, or additional installation is required. Passwords are never stored in the app database. Browser automation imports purchase history only from stores selected by the user, and only public product/price data is fetched for comparison.
 
